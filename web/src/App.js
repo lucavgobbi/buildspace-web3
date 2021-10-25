@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { ethers } from "ethers";
 import "./App.css";
 import abi from "./utils/WavePortal.json";
@@ -54,28 +54,28 @@ export default function App() {
     checkIfWalletIsConnected();
   }, [ethereum]);
 
-  const getContract = () => {
+  const getContract = useCallback(() => {
     if (ethereum) {
       const provider = new ethers.providers.Web3Provider(ethereum);
       const signer = provider.getSigner();
       return new ethers.Contract(contractAddress, abi.abi, signer);
     }
     return null;
-  };
-
-  const getWaves = async () => {
-    if (ethereum) {
-      try {
-        const wavePortalContract = getContract();
-        const count = await wavePortalContract.getTotalWaves();
-        setCurrentWaves(count.toNumber());
-      } catch (error) {}
-    }
-  };
+  }, [ethereum]);
 
   useEffect(() => {
+    const getWaves = async () => {
+      if (ethereum) {
+        try {
+          const wavePortalContract = getContract();
+          const count = await wavePortalContract.getTotalWaves();
+          setCurrentWaves(count.toNumber());
+        } catch (error) {}
+      }
+    };
+
     getWaves();
-  }, [isMining]);
+  }, [isMining, ethereum, getContract]);
 
   const wave = async () => {
     if (ethereum) {
