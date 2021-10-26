@@ -18,7 +18,7 @@ export default function App() {
   const [message, setMessage] = useState("");
   const [allWaves, setAllWaves] = useState([]);
   const ethereum = useEthereum();
-  const contractAddress = "0x6dE3861eC9cb7bCeC9DC8cf9ca8E72dB9FC1072b";
+  const contractAddress = "0x426c0010e295E1d65Db77bF18cD0ffFB0083b584";
 
   const connectWallet = async () => {
     if (ethereum) {
@@ -84,14 +84,36 @@ export default function App() {
     };
 
     getWaves();
-  }, [isMining, ethereum, getContract]);
+
+    const onNewWave = (from, timestamp, message) => {
+      setAllWaves((prevState) => [
+        ...prevState,
+        {
+          address: from,
+          timestamp: new Date(timestamp * 1000),
+          message: message,
+        },
+      ]);
+    };
+
+    const wavePortalContract = getContract();
+    wavePortalContract.on("NewWave", onNewWave);
+
+    return () => {
+      if (wavePortalContract) {
+        wavePortalContract.off("NewWave", onNewWave);
+      }
+    };
+  }, [ethereum, getContract]);
 
   const wave = async () => {
     if (ethereum) {
       try {
         const wavePortalContract = getContract();
 
-        const waveTxn = await wavePortalContract.wave(message);
+        const waveTxn = await wavePortalContract.wave(message, {
+          gasLimit: 300000,
+        });
         setIsMining(true);
         console.log("Mining...", waveTxn.hash);
 
@@ -147,7 +169,7 @@ export default function App() {
                   disabled={message.length === 0}
                   onClick={wave}
                 >
-                  Wave at Me
+                  Wave at Me for a chance to get 0.0001 ETH
                 </button>
               </>
             )}
