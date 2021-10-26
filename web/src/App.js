@@ -96,8 +96,11 @@ export default function App() {
       ]);
     };
 
-    const wavePortalContract = getContract();
-    wavePortalContract.on("NewWave", onNewWave);
+    let wavePortalContract;
+    if (ethereum) {
+      wavePortalContract = getContract();
+      wavePortalContract.on("NewWave", onNewWave);
+    }
 
     return () => {
       if (wavePortalContract) {
