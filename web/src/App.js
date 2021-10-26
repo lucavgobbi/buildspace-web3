@@ -15,9 +15,10 @@ const useEthereum = () => {
 export default function App() {
   const [currentAccount, setCurrentAccount] = useState();
   const [isMining, setIsMining] = useState(false);
-  const [currentWaves, setCurrentWaves] = useState(0);
+  const [message, setMessage] = useState("");
+  const [allWaves, setAllWaves] = useState([]);
   const ethereum = useEthereum();
-  const contractAddress = "0x38053270395d4d74dE0Fb4101db2583C615f5Ca7";
+  const contractAddress = "0x6dE3861eC9cb7bCeC9DC8cf9ca8E72dB9FC1072b";
 
   const connectWallet = async () => {
     if (ethereum) {
@@ -68,8 +69,16 @@ export default function App() {
       if (ethereum) {
         try {
           const wavePortalContract = getContract();
-          const count = await wavePortalContract.getTotalWaves();
-          setCurrentWaves(count.toNumber());
+          const waves = await wavePortalContract.getAllWaves();
+          setAllWaves(
+            waves.map((m) => {
+              return {
+                address: m.waver,
+                timestamp: new Date(m.timestamp * 1000),
+                message: m.message,
+              };
+            })
+          );
         } catch (error) {}
       }
     };
@@ -82,12 +91,13 @@ export default function App() {
       try {
         const wavePortalContract = getContract();
 
-        const waveTxn = await wavePortalContract.wave();
+        const waveTxn = await wavePortalContract.wave(message);
         setIsMining(true);
         console.log("Mining...", waveTxn.hash);
 
         await waveTxn.wait();
         setIsMining(false);
+        setMessage("");
       } catch (error) {
         console.log(error);
       }
@@ -105,24 +115,19 @@ export default function App() {
           </span>{" "}
           Hey there!
         </div>
-
         <div className="bio">I am Luca and I'm trying to learn web3!</div>
-
-        {ethereum ? (
-          currentAccount ? (
-            <p>Hello {currentAccount}</p>
-          ) : (
-            <button className="waveButton" onClick={connectWallet}>
-              Connect Wallet
-            </button>
-          )
-        ) : (
+        {!ethereum && (
           <p>Ops... looks like you don't have metamask installed...</p>
         )}
-
+        {currentAccount ? (
+          <p>Hello {currentAccount}</p>
+        ) : (
+          <button className="waveButton" onClick={connectWallet}>
+            Connect Wallet
+          </button>
+        )}
         {isConnected && (
           <>
-            <p>So far we've got {currentWaves} waves!</p>
             {isMining ? (
               <div>
                 <span role="img" aria-label="Waving hand">
@@ -131,12 +136,39 @@ export default function App() {
                 Mining...
               </div>
             ) : (
-              <button className="waveButton" onClick={wave}>
-                Wave at Me
-              </button>
+              <>
+                <input
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                ></input>
+                <button
+                  className="waveButton"
+                  disabled={message.length === 0}
+                  onClick={wave}
+                >
+                  Wave at Me
+                </button>
+              </>
             )}
           </>
         )}
+        {allWaves.map((wave, index) => {
+          return (
+            <div
+              key={index}
+              style={{
+                backgroundColor: "OldLace",
+                marginTop: "16px",
+                padding: "8px",
+              }}
+            >
+              <div>Address: {wave.address}</div>
+              <div>Time: {wave.timestamp.toString()}</div>
+              <div>Message: {wave.message}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
